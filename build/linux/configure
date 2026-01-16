@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# '-h', '--help', or empty
 if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
 cat <<EOF
 Usage: ./configure [options]
@@ -23,7 +24,7 @@ Standard options:
 Configuration options:
   --disable-cli            disable cli
   --system-libdavs2        use system libdavs2 instead of internal
-  --enable-shared          build shared library
+  --enable-shared          enable building shared library
   --disable-static         disable building static library
   --disable-opencl         disable OpenCL features
   --disable-gpl            disable GPL-only features
@@ -45,6 +46,16 @@ Cross-compilation:
   --host=HOST              build programs to run on HOST
   --cross-prefix=PREFIX    use PREFIX for compilation tools
   --sysroot=SYSROOT        root of cross-build tree
+
+Enviroment variables:
+  CC                       absolute path (or name if in path) of c compiler [optional]
+  CXX                      absolute path (or name if in path) of cxx compiler [optional]
+  AS                       absolute path (or name if in path) of as executable [optional]
+  AR                       absolute path (or name if in path) of ar executable [optional]
+  STRIP                    absolute path (or name if in path) of strip executable [optional]
+  RANLIB                   absolute path (or name if in path) of ranlib executable [optional]
+  PKGCONFIG                absolute path (or name if in path) of pkg-config executable [optional]
+  INSTALL                  absolute path (or name if in path) of install executable [optional]
 
 EOF
 exit 1
@@ -297,8 +308,6 @@ configure_system_override() {
     return $res
 }
 
-rm -f davs2_config.h config.h config.mak config.log davs2.pc davs2.def conftest*
-
 # Construct a path to the specified directory relative to the working directory
 relative_path() {
     local base="${PWD%/}"
@@ -313,15 +322,33 @@ relative_path() {
     dirname "$up${path#"$base/"}"
 }
 
-SRCPATH="$(cd ../../source ; pwd)"
+# check if SRCPATH is already set, if so, use it, else use default
+if [ -v SRCPATH ]; then
+  SRCPATH="${SRCPATH}"
+else
+  # default is 2 levels above pwd then into source
+  SRCPATH="$(cd ../../source ; pwd)"
+fi
+
+# if the SRCPATH is pwd, simplify it to .
 [ "$SRCPATH" = "$(pwd)" ] && SRCPATH=.
+
+# cant allow whitespace characters in the SRCPATH
 [ -n "$(echo $SRCPATH | grep ' ')" ] && die "Out of tree builds are impossible with whitespace in source path."
 
-BUILDPATH="$(cd . ; pwd)"
+# check if BUILDPATH is already set, if so, use it, else use default
+if [ -v BUILDPATH ]; then
+  BUILDPATH="${BUILDPATH}"
+else
+  # default is pwd
+  BUILDPATH="$(cd . ; pwd)"
+fi
 
-echo "$SRCPATH" | grep -q ' ' && die "Out of tree builds are impossible with whitespace in source path."
-echo "$BUILDPATH" | grep -q ' ' && die "Out of tree builds are impossible with whitespace in source path."
-[ -e "$BUILDPATH/config.h" -o -e "$BUILDPATH/davs2_config.h" ] && die "Out of tree builds are impossible with config.h/davs2_config.h in source dir."
+# cant allow whitespace characters in BUILDPATH
+[ -n "$(echo BUILDPATH | grep ' ')" ] && die "Out of tree builds are impossible with whitespace in build path."
+
+# remove past build artifacts
+rm -f "${BUILDPATH}/davs2_config.h" "${BUILDPATH}/config.h" "${BUILDPATH}/config.mak" "${BUILDPATH}/config.log" "${BUILDPATH}/davs2.pc" "${BUILDPATH}/davs2.def" "${BUILDPATH}/conftest"*
 
 prefix='/usr/local'
 exec_prefix='${prefix}'
@@ -370,7 +397,6 @@ CONFIG_HAVE="MALLOC_H ALTIVEC ALTIVEC_H MMX ARMV6 ARMV6T2 NEON BEOSTHREAD POSIXT
              MSA MMAP WINRT VSX"
 
 # parse options
-
 for opt do
     optarg="${opt#*=}"
     case "$opt" in
@@ -485,28 +511,59 @@ for opt do
     esac
 done
 
+# if not building a program or lib, stop
 [ "$cli" = "no" -a "$shared" = "no" -a "$static" = "no" ] && die "Nothing to build. Enable cli, shared or static."
 
-CC="${CC-${cross_prefix}g++}"
-STRIP="${STRIP-${cross_prefix}strip}"
-INSTALL="${INSTALL-install}"
-PKGCONFIG="${PKGCONFIG-${cross_prefix}pkg-config}"
+# if CC is alr defined, use it, else, use default
+if [ -v CC]; then
+  CC="${CC}"
+else
+  CC="${CC-${cross_prefix}g++}"
+fi
+
+# if STRIP is alr defined, use it, else, use default
+if [ -v STRIP]; then
+  STRIP="${STRIP}"
+else
+  STRIP="${STRIP-${cross_prefix}strip}"
+fi
+
+# if INSTALL is alr defined, use it, else, use default
+if [ -v INSTALL]; then
+  INSTALL="${INSTALL}"
+else
+  INSTALL="${INSTALL-install}"
+fi
+
+# if PKGCONFIG is alr defined, use it, else, use default
+if [ -v PKGCONFIG]; then
+  PKGCONFIG="${PKGCONFIG}"
+else
+  PKGCONFIG="${PKGCONFIG-${cross_prefix}pkg-config}"
+fi
 
 # ar and ranlib doesn't load the LTO plugin by default, prefer the g++-prefixed wrappers which does.
-if ${cross_prefix}g++-ar --version >/dev/null 2>&1; then
+if [ -v AR]; then
+  AR="${AR}"
+elif ${cross_prefix}g++-ar --version >/dev/null 2>&1; then
     AR="${AR-${cross_prefix}g++-ar}"
 else
     AR="${AR-${cross_prefix}ar}"
 fi
+
+if [ -v RANLIB]; then
+  RANLIB="${RANLIB}"
 if ${cross_prefix}g++-ranlib --version >/dev/null 2>&1; then
     RANLIB="${RANLIB-${cross_prefix}g++-ranlib}"
 else
     RANLIB="${RANLIB-${cross_prefix}ranlib}"
 fi
 
+# if the host cmd option is set, use it, else try to guess it
 if [ "x$host" = x ]; then
     host=`${BUILDPATH}/config.guess`
 fi
+
 # normalize a triplet into a quadruplet
 host=`${BUILDPATH}/config.sub $host`
 
@@ -554,7 +611,8 @@ else
     fi
 fi
 
-if [[ "$cc_base" = clang* ]]; then
+# check if the word clang is anywhere in the file name of the c compiler
+if [[ "$cc_base" = clang* -o "$cc_base" = *clang -0 "$cc_base" = *clang* ]]; then
     if cc_check '' -Werror=unknown-warning-option ; then
         CHECK_CFLAGS="$CHECK_CFLAGS -Werror=unknown-warning-option"
     fi
