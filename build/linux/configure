@@ -57,6 +57,9 @@ Enviroment variables:
   PKGCONFIG                absolute path (or name if in path) of pkg-config executable [optional]
   INSTALL                  absolute path (or name if in path) of install executable [optional]
 
+  TOP_SRCPATH              absolute path to the top level directory of the project (folder containing build, source, README.md, etc.) [Defaults to ../../ of pwd]
+  BUILDPATH                absolute path to put built files into (will be filled with .a/.so, .asm, and other intermediate files) [Defaults to pwd]
+
 EOF
 exit 1
 fi
@@ -322,13 +325,22 @@ relative_path() {
     dirname "$up${path#"$base/"}"
 }
 
-# check if SRCPATH is already set, if so, use it, else use default
-if [ -v SRCPATH ]; then
-  SRCPATH="${SRCPATH}"
+# check if TOP_SRCPATH is already set, if so, use it, else use default
+if [ -v TOP_SRCPATH ]; then
+  TOP_SRCPATH="${TOP_SRCPATH}"
 else
   # default is 2 levels above pwd then into source
-  SRCPATH="$(cd ../../source ; pwd)"
+  TOP_SRCPATH="$(cd ../../ ; pwd)"
 fi
+
+# if the TOP_SRCPATH is pwd, simplify it to .
+[ "TOP_SRCPATH" = "$(pwd)" ] && SRCPATH=.
+
+# cant allow whitespace characters in the TOP_SRCPATH
+[ -n "$(echo TOP_SRCPATH | grep ' ')" ] && die "Out of tree builds are impossible with whitespace in top source path."
+
+# SRCPATH is TOP_SRCPATH/source
+SRCPATH="$(cd "${TOP_SRCPATH}/source" ; pwd)"
 
 # if the SRCPATH is pwd, simplify it to .
 [ "$SRCPATH" = "$(pwd)" ] && SRCPATH=.
@@ -561,11 +573,11 @@ fi
 
 # if the host cmd option is set, use it, else try to guess it
 if [ "x$host" = x ]; then
-    host=`${BUILDPATH}/config.guess`
+    host=`${TOP_SRCPATH}/build/linux/config.guess`
 fi
 
 # normalize a triplet into a quadruplet
-host=`${BUILDPATH}/config.sub $host`
+host=`${TOP_SRCPATH}/build/linux/config.sub $host`
 
 # split $host
 host_cpu="${host%%-*}"
