@@ -65,19 +65,19 @@ exit 1
 fi
 
 log_check() {
-    echo -n "checking $1... " >> config.log
+    echo -n "checking $1... " >> ${BUILDPATH}/config.log
 }
 
 log_ok() {
-    echo "yes" >> config.log
+    echo "yes" >> ${BUILDPATH}/config.log
 }
 
 log_fail() {
-    echo "no" >> config.log
+    echo "no" >> ${BUILDPATH}/config.log
 }
 
 log_msg() {
-    echo "$1" >> config.log
+    echo "$1" >> ${BUILDPATH}/config.log
 }
 
 cc_cflags() {
@@ -151,17 +151,17 @@ cc_check() {
     else
         log_check "for $3 in $1";
     fi
-    rm -f conftest.c
+    rm -f ${BUILDPATH}/conftest.c
     for arg in $1; do
-        echo "#include <$arg>" >> conftest.c
+        echo "#include <$arg>" >> ${BUILDPATH}/conftest.c
     done
-    echo "int main (void) { $3 return 0; }" >> conftest.c
+    echo "int main (void) { $3 return 0; }" >> ${BUILDPATH}/conftest.c
     if [ $compiler_style = MS ]; then
-        cc_cmd="$CC conftest.c $(cc_cflags $CFLAGS $CHECK_CFLAGS $2) -link $(cl_ldflags $2 $LDFLAGSCLI $LDFLAGS)"
+        cc_cmd="$CC ${BUILDPATH}/conftest.c $(cc_cflags $CFLAGS $CHECK_CFLAGS $2) -link $(cl_ldflags $2 $LDFLAGSCLI $LDFLAGS)"
     else
-        cc_cmd="$CC conftest.c $CFLAGS $CHECK_CFLAGS $2 $LDFLAGSCLI $LDFLAGS -o conftest"
+        cc_cmd="$CC ${BUILDPATH}/conftest.c $CFLAGS $CHECK_CFLAGS $2 $LDFLAGSCLI $LDFLAGS -o ${BUILDPATH}/conftest"
     fi
-    if $cc_cmd >conftest.log 2>&1; then
+    if $cc_cmd > ${BUILDPATH}/conftest.log 2>&1; then
         res=$?
         log_ok
     else
@@ -170,11 +170,11 @@ cc_check() {
         log_msg "Failed commandline was:"
         log_msg "--------------------------------------------------"
         log_msg "$cc_cmd"
-        cat conftest.log >> config.log
+        cat ${BUILDPATH}/conftest.log >> ${BUILDPATH}/config.log
         log_msg "--------------------------------------------------"
         log_msg "Failed program was:"
         log_msg "--------------------------------------------------"
-        cat conftest.c >> config.log
+        cat ${BUILDPATH}/conftest.c >> ${BUILDPATH}/config.log
         log_msg "--------------------------------------------------"
     fi
     return $res
@@ -182,28 +182,28 @@ cc_check() {
 
 cpp_check() {
     log_check "whether $3 is true"
-    rm -f conftest.c
+    rm -f ${BUILDPATH}/conftest.c
     for arg in $1; do
-        echo "#include <$arg>" >> conftest.c
+        echo "#include <$arg>" >> ${BUILDPATH}/conftest.c
     done
-    echo -e "#if !($3) \n#error $4 \n#endif " >> conftest.c
+    echo -e "#if !($3) \n#error $4 \n#endif " >> ${BUILDPATH}/conftest.c
     if [ $compiler_style = MS ]; then
-        cpp_cmd="$CC conftest.c $(cc_cflags $CFLAGS $2) -P"
+        cpp_cmd="$CC ${BUILDPATH}/conftest.c $(cc_cflags $CFLAGS $2) -P"
     else
-        cpp_cmd="$CC conftest.c $CFLAGS $2 -E -o conftest"
+        cpp_cmd="$CC ${BUILDPATH}/conftest.c $CFLAGS $2 -E -o ${BUILDPATH}/conftest"
     fi
-    if $cpp_cmd >conftest.log 2>&1; then
+    if $cpp_cmd > ${BUILDPATH}/conftest.log 2>&1; then
         res=$?
         log_ok
     else
         res=$?
         log_fail
         log_msg "--------------------------------------------------"
-        cat conftest.log >> config.log
+        cat ${BUILDPATH}/conftest.log >> ${BUILDPATH}/config.log
         log_msg "--------------------------------------------------"
         log_msg "Failed program was:"
         log_msg "--------------------------------------------------"
-        cat conftest.c >> config.log
+        cat ${BUILDPATH}/conftest.c >> ${BUILDPATH}/config.log
         log_msg "--------------------------------------------------"
     fi
     return $res
@@ -211,9 +211,9 @@ cpp_check() {
 
 as_check() {
     log_check "whether $AS supports $1"
-    echo "$1" > conftest$AS_EXT
-    as_cmd="$AS conftest$AS_EXT $ASFLAGS $2 -o conftest.o"
-    if $as_cmd >conftest.log 2>&1; then
+    echo "$1" > ${BUILDPATH}/conftest$AS_EXT
+    as_cmd="$AS ${BUILDPATH}/conftest$AS_EXT $ASFLAGS $2 -o ${BUILDPATH}/conftest.o"
+    if $as_cmd > ${BUILDPATH}/conftest.log 2>&1; then
         res=$?
         log_ok
     else
@@ -222,11 +222,11 @@ as_check() {
         log_msg "Failed commandline was:"
         log_msg "--------------------------------------------------"
         log_msg "$as_cmd"
-        cat conftest.log >> config.log
+        cat ${BUILDPATH}/conftest.log >> ${BUILDPATH}/config.log
         log_msg "--------------------------------------------------"
         log_msg "Failed program was:"
         log_msg "--------------------------------------------------"
-        cat conftest$AS_EXT >> config.log
+        cat ${BUILDPATH}/conftest$AS_EXT >> ${BUILDPATH}/config.log
         log_msg "--------------------------------------------------"
     fi
     return $res
@@ -234,13 +234,13 @@ as_check() {
 
 rc_check() {
     log_check "whether $RC works"
-    echo "$1" > conftest.rc
+    echo "$1" > ${BUILDPATH}/conftest.rc
     if [ $compiler = GNU ]; then
-        rc_cmd="$RC $RCFLAGS -o conftest.o conftest.rc"
+        rc_cmd="$RC $RCFLAGS -o ${BUILDPATH}/conftest.o ${BUILDPATH}/conftest.rc"
     else
-        rc_cmd="$RC $RCFLAGS -foconftest.o conftest.rc"
+        rc_cmd="$RC $RCFLAGS -fo${BUILDPATH}/conftest.o ${BUILDPATH}/conftest.rc"
     fi
-    if $rc_cmd >conftest.log 2>&1; then
+    if $rc_cmd > ${BUILDPATH}/conftest.log 2>&1; then
         res=$?
         log_ok
     else
@@ -249,18 +249,18 @@ rc_check() {
         log_msg "Failed commandline was:"
         log_msg "--------------------------------------------------"
         log_msg "$rc_cmd"
-        cat conftest.log >> config.log
+        cat ${BUILDPATH}/conftest.log >> ${BUILDPATH}/config.log
         log_msg "--------------------------------------------------"
         log_msg "Failed program was:"
         log_msg "--------------------------------------------------"
-        cat conftest.rc >> config.log
+        cat ${BUILDPATH}/conftest.rc >> ${BUILDPATH}/config.log
         log_msg "--------------------------------------------------"
     fi
     return $res
 }
 
 define() {
-    echo "#define $1$([ -n "$2" ] && echo " $2" || echo " 1")" >> config.h
+    echo "#define $1$([ -n "$2" ] && echo " $2" || echo " 1")" >> ${BUILDPATH}/config.h
 }
 
 die() {
@@ -337,7 +337,10 @@ fi
 [ "TOP_SRCPATH" = "$(pwd)" ] && SRCPATH=.
 
 # cant allow whitespace characters in the TOP_SRCPATH
-[ -n "$(echo TOP_SRCPATH | grep ' ')" ] && die "Out of tree builds are impossible with whitespace in top source path."
+[ -n "$(echo $TOP_SRCPATH | grep ' ')" ] && die "Out of tree builds are impossible with whitespace in top source path."
+
+# remove slashes for consistency
+TOP_SRCPATH=${TOP_SRCPATH%/}
 
 # SRCPATH is TOP_SRCPATH/source
 SRCPATH="$(cd "${TOP_SRCPATH}/source" ; pwd)"
@@ -357,7 +360,13 @@ else
 fi
 
 # cant allow whitespace characters in BUILDPATH
-[ -n "$(echo BUILDPATH | grep ' ')" ] && die "Out of tree builds are impossible with whitespace in build path."
+[ -n "$(echo $BUILDPATH | grep ' ')" ] && die "Out of tree builds are impossible with whitespace in build path."
+
+# remove trailing slashes for consistency
+BUILDPATH=${BUILDPATH%/}
+
+# make build dir
+mkdir -p "${BUILDPATH}"
 
 # remove past build artifacts
 rm -f "${BUILDPATH}/davs2_config.h" "${BUILDPATH}/config.h" "${BUILDPATH}/config.mak" "${BUILDPATH}/config.log" "${BUILDPATH}/davs2.pc" "${BUILDPATH}/davs2.def" "${BUILDPATH}/conftest"*
@@ -585,7 +594,7 @@ host="${host#*-}"
 host_vendor="${host%%-*}"
 host_os="${host#*-}"
 
-trap 'rm -f conftest*' EXIT
+trap 'rm -f ${BUILDPATH}/conftest*' EXIT
 
 # test for use of compilers that require specific handling
 cc_base=`basename "$CC"`
@@ -768,7 +777,7 @@ case $host_cpu in
             ASFLAGS="$ASFLAGS -f win64"
             if [ $compiler = GNU ]; then
                 # only the GNU toolchain is inconsistent in prefixing function names with _
-                cc_check "" "-S" && grep -q "_main:" conftest && ASFLAGS="$ASFLAGS -DPREFIX"
+                cc_check "" "-S" && grep -q "_main:" ${BUILDPATH}/conftest && ASFLAGS="$ASFLAGS -DPREFIX"
                 cc_check "" "-Wl,--high-entropy-va" && LDFLAGS="$LDFLAGS -Wl,--high-entropy-va"
                 LDFLAGS="$LDFLAGS -Wl,--dynamicbase,--nxcompat,--tsaware"
                 LDFLAGSCLI="$LDFLAGSCLI -Wl,--image-base,0x140000000"
@@ -991,12 +1000,12 @@ ASFLAGS="$ASFLAGS -DSTACK_ALIGNMENT=$stack_alignment"
 # skip endianness check for Intel Compiler and MSVS, as all supported platforms are little. each have flags that will cause the check to fail as well
 CPU_ENDIAN="little-endian"
 if [ $compiler = GNU ]; then
-    echo "int i[2] = {0x42494745,0}; double f[2] = {0x1.0656e6469616ep+102,0};" > conftest.c
-    $CC $CFLAGS conftest.c -c -o conftest.o 2>/dev/null || die "endian test failed"
-    if (${cross_prefix}strings -a conftest.o | grep -q BIGE) && (${cross_prefix}strings -a conftest.o | grep -q FPendian) ; then
+    echo "int i[2] = {0x42494745,0}; double f[2] = {0x1.0656e6469616ep+102,0};" > ${BUILDPATH}/conftest.c
+    $CC $CFLAGS ${BUILDPATH}/conftest.c -c -o ${BUILDPATH}/conftest.o 2>/dev/null || die "endian test failed"
+    if (${cross_prefix}strings -a ${BUILDPATH}/conftest.o | grep -q BIGE) && (${cross_prefix}strings -a ${BUILDPATH}/conftest.o | grep -q FPendian) ; then
         define WORDS_BIGENDIAN
         CPU_ENDIAN="big-endian"
-    elif !(${cross_prefix}strings -a conftest.o | grep -q EGIB && ${cross_prefix}strings -a conftest.o | grep -q naidnePF) ; then
+    elif !(${cross_prefix}strings -a ${BUILDPATH}/conftest.o | grep -q EGIB && ${cross_prefix}strings -a ${BUILDPATH}/conftest.o | grep -q naidnePF) ; then
         die "endian test failed"
     fi
 fi
@@ -1173,14 +1182,14 @@ fi
 
 #define undefined vars as 0
 for var in $CONFIG_HAVE; do
-    grep -q "HAVE_$var 1" config.h || define HAVE_$var 0
+    grep -q "HAVE_$var 1" ${BUILDPATH}/config.h || define HAVE_$var 0
 done
 
 # generate exported config file
 
 config_chroma_format="DAVS2_CSP_I$chroma_format"
 [ "$config_chroma_format" == "DAVS2_CSP_Iall" ] && config_chroma_format="0"
-cat > davs2_config.h << EOF
+cat > ${BUILDPATH}/davs2_config.h << EOF
 #define DAVS2_BIT_DEPTH     $bit_depth
 #define DAVS2_GPL           $davs2_gpl
 #define DAVS2_INTERLACED    $davs2_interlaced
@@ -1264,7 +1273,7 @@ fi
 
 # generate config files
 
-cat > config.mak << EOF
+cat > $BUILDPATH/config.mak << EOF
 SRCPATH=$SRCPATH
 prefix=$prefix
 exec_prefix=$exec_prefix
@@ -1301,59 +1310,59 @@ HAVE_OPENCL=$opencl
 EOF
 
 if [ $compiler_style = MS ]; then
-    echo '%.o: %.c' >> config.mak
-    echo '	$(CC) $(CFLAGS) -c -Fo$@ $<' >> config.mak
+    echo '%.o: %.c' >> $BUILDPATH/config.mak
+    echo '	$(CC) $(CFLAGS) -c -Fo$@ $<' >> $BUILDPATH/config.mak
 fi
 
 if [ "$cli" = "yes" ]; then
-    echo 'default: cli' >> config.mak
-    echo 'install: install-cli' >> config.mak
+    echo 'default: cli' >> $BUILDPATH/config.mak
+    echo 'install: install-cli' >> $BUILDPATH/config.mak
 fi
 
 if [ "$shared" = "yes" ]; then
     API=$(grep '#define DAVS2_BUILD' < ${BUILDPATH}/davs2_config.h | sed 's/^.* \([1-9][0-9]*\).*$/\1/')
     if [ "$SYS" = "WINDOWS" -o "$SYS" = "CYGWIN" ]; then
-        echo "SONAME=libdavs2-$API.dll" >> config.mak
+        echo "SONAME=libdavs2-$API.dll" >> $BUILDPATH/config.mak
         if [ $compiler_style = MS ]; then
-            echo 'IMPLIBNAME=libdavs2.dll.lib' >> config.mak
+            echo 'IMPLIBNAME=libdavs2.dll.lib' >> $BUILDPATH/config.mak
             # GNU ld on windows defaults to exporting all global functions if there are no explicit __declspec(dllexport) declarations
             # MSVC link does not act similarly, so it is required to make an export definition out of davs2.h and use it at link time
-            echo "SOFLAGS=-dll -def:davs2.def -implib:\$(IMPLIBNAME) $SOFLAGS" >> config.mak
-            echo "EXPORTS" > davs2.def
+            echo "SOFLAGS=-dll -def:davs2.def -implib:\$(IMPLIBNAME) $SOFLAGS" >> $BUILDPATH/config.mak
+            echo "EXPORTS" > ${BUILDPATH}/davs2.def
             # export API functions
-            grep "^\(int\|void\|davs2_t\).*davs2" ${SRCPATH}/davs2.h | sed -e "s/.*\(davs2.*\)(.*/\1/;s/open/open_$API/g" >> davs2.def
+            grep "^\(int\|void\|davs2_t\).*davs2" ${SRCPATH}/davs2.h | sed -e "s/.*\(davs2.*\)(.*/\1/;s/open/open_$API/g" >> ${BUILDPATH}/davs2.def
             # export API variables/data. must be flagged with the DATA keyword
-            grep "extern.*davs2" ${SRCPATH}/davs2.h | sed -e "s/.*\(davs2\w*\)\W.*/\1 DATA/;" >> davs2.def
+            grep "extern.*davs2" ${SRCPATH}/davs2.h | sed -e "s/.*\(davs2\w*\)\W.*/\1 DATA/;" >> ${BUILDPATH}/davs2.def
         else
-            echo 'IMPLIBNAME=libdavs2.dll.a' >> config.mak
-            echo "SOFLAGS=-shared -Wl,--out-implib,\$(IMPLIBNAME) $SOFLAGS" >> config.mak
+            echo 'IMPLIBNAME=libdavs2.dll.a' >> $BUILDPATH/config.mak
+            echo "SOFLAGS=-shared -Wl,--out-implib,\$(IMPLIBNAME) $SOFLAGS" >> $BUILDPATH/config.mak
         fi
     elif [ "$SYS" = "MACOSX" ]; then
-        echo "SOSUFFIX=dylib" >> config.mak
-        echo "SONAME=libdavs2.$API.dylib" >> config.mak
-        echo "SOFLAGS=-shared -dynamiclib -Wl,-single_module -Wl,-read_only_relocs,suppress -install_name \$(DESTDIR)\$(libdir)/\$(SONAME) $SOFLAGS" >> config.mak
+        echo "SOSUFFIX=dylib" >> $BUILDPATH/config.mak
+        echo "SONAME=libdavs2.$API.dylib" >> $BUILDPATH/config.mak
+        echo "SOFLAGS=-shared -dynamiclib -Wl,-single_module -Wl,-read_only_relocs,suppress -install_name \$(DESTDIR)\$(libdir)/\$(SONAME) $SOFLAGS" >> ${BUILDPATH}/config.mak
     elif [ "$SYS" = "SunOS" ]; then
-        echo "SOSUFFIX=so" >> config.mak
-        echo "SONAME=libdavs2.so.$API" >> config.mak
-        echo "SOFLAGS=-shared -Wl,-h,\$(SONAME) $SOFLAGS" >> config.mak
+        echo "SOSUFFIX=so" >> $BUILDPATH/config.mak
+        echo "SONAME=libdavs2.so.$API" >> $BUILDPATH/config.mak
+        echo "SOFLAGS=-shared -Wl,-h,\$(SONAME) $SOFLAGS" >> $BUILDPATH/config.mak
     else
-        echo "SOSUFFIX=so" >> config.mak
-        echo "SONAME=libdavs2.so.$API" >> config.mak
-        echo "SOFLAGS=-shared -Wl,-soname,\$(SONAME) $SOFLAGS" >> config.mak
+        echo "SOSUFFIX=so" >> $BUILDPATH/config.mak
+        echo "SONAME=libdavs2.so.$API" >> $BUILDPATH/config.mak
+        echo "SOFLAGS=-shared -Wl,-soname,\$(SONAME) $SOFLAGS" >> $BUILDPATH/config.mak
     fi
-    echo 'default: lib-shared' >> config.mak
-    echo 'install: install-lib-shared' >> config.mak
+    echo 'default: lib-shared' >> $BUILDPATH/config.mak
+    echo 'install: install-lib-shared' >> $BUILDPATH/config.mak
 fi
 
 if [ "$static" = "yes" ]; then
-    echo 'default: lib-static' >> config.mak
-    echo 'install: install-lib-static' >> config.mak
+    echo 'default: lib-static' >> $BUILDPATH/config.mak
+    echo 'install: install-lib-static' >> $BUILDPATH/config.mak
 fi
 
-echo "LDFLAGSCLI = $LDFLAGSCLI" >> config.mak
-echo "CLI_LIBDAVS2 = $CLI_LIBDAVS2" >> config.mak
+echo "LDFLAGSCLI = $LDFLAGSCLI" >> $BUILDPATH/config.mak
+echo "CLI_LIBDAVS2 = $CLI_LIBDAVS2" >> $BUILDPATH/config.mak
 
-cat > davs2.pc << EOF
+cat > ${BUILDPATH}/davs2.pc << EOF
 prefix=$prefix
 exec_prefix=$exec_prefix
 libdir=$libdir
@@ -1361,7 +1370,7 @@ includedir=$includedir
 
 Name: davs2
 Description: AVS2 (IEEE 1857.4) decoder library
-Version: $(grep POINTVER < davs2_config.h | sed -e 's/.* "//; s/".*//')
+Version: $(grep POINTVER < ${BUILDPATH}/davs2_config.h | sed -e 's/.* "//; s/".*//')
 Libs: -L$libdir -ldavs2 $([ "$shared" = "yes" ] || echo $libpthread $libm $libdl)
 Libs.private: $([ "$shared" = "yes" ] && echo $libpthread $libm $libdl)
 Cflags: -I$includedir
@@ -1371,7 +1380,7 @@ filters="crop select_every"
 gpl_filters=""
 [ $gpl = yes ] && filters="$filters $gpl_filters"
 
-cat > conftest.log <<EOF
+cat > ${BUILDPATH}/conftest.log <<EOF
 platform:      $ARCH
 byte order:    $CPU_ENDIAN
 system:        $SYS
@@ -1394,12 +1403,17 @@ bit depth:     $bit_depth
 chroma format: $chroma_format
 EOF
 
-echo >> config.log
-cat conftest.log >> config.log
-cat conftest.log
+echo >> $BUILDPATH/config.log
+cat ${BUILDPATH}/conftest.log >> $BUILDPATH/config.log
+cat ${BUILDPATH}/conftest.log
 
 # [ "$SRCPATH" != "." ] && ln -sf ${SRCPATH}/Makefile ./Makefile
 mkdir -p $BUILDPATH/common/{aarch64,arm,ppc,x86,vec} test
 
 echo
 echo "You can run 'make' or 'make fprofiled' now."
+
+# make a Makefile in BUILDPATH that just points to the real Makefile in build/linux
+cat > "${BUILDPATH}/Makefile" << EOF
+include ${TOP_SRCPATH}/build/linux/Makefile
+EOF
