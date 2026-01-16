@@ -326,7 +326,7 @@ relative_path() {
 }
 
 # check if TOP_SRCPATH is already set, if so, use it, else use default
-if [ -v TOP_SRCPATH ]; then
+if [ -n "$TOP_SRCPATH" ]; then
   TOP_SRCPATH="${TOP_SRCPATH}"
 else
   # default is 2 levels above pwd then into source
@@ -349,7 +349,7 @@ SRCPATH="$(cd "${TOP_SRCPATH}/source" ; pwd)"
 [ -n "$(echo $SRCPATH | grep ' ')" ] && die "Out of tree builds are impossible with whitespace in source path."
 
 # check if BUILDPATH is already set, if so, use it, else use default
-if [ -v BUILDPATH ]; then
+if [ -n "$BUILDPATH" ]; then
   BUILDPATH="${BUILDPATH}"
 else
   # default is pwd
@@ -527,35 +527,35 @@ done
 [ "$cli" = "no" -a "$shared" = "no" -a "$static" = "no" ] && die "Nothing to build. Enable cli, shared or static."
 
 # if CC is alr defined, use it, else, use default
-if [ -v CC]; then
+if [ -n "$CC" ]; then
   CC="${CC}"
 else
   CC="${CC-${cross_prefix}g++}"
 fi
 
 # if STRIP is alr defined, use it, else, use default
-if [ -v STRIP]; then
+if [ -n "$STRIP" ]; then
   STRIP="${STRIP}"
 else
   STRIP="${STRIP-${cross_prefix}strip}"
 fi
 
 # if INSTALL is alr defined, use it, else, use default
-if [ -v INSTALL]; then
+if [ -n "$INSTALL" ]; then
   INSTALL="${INSTALL}"
 else
   INSTALL="${INSTALL-install}"
 fi
 
 # if PKGCONFIG is alr defined, use it, else, use default
-if [ -v PKGCONFIG]; then
+if [ -n "$PKGCONFIG" ]; then
   PKGCONFIG="${PKGCONFIG}"
 else
   PKGCONFIG="${PKGCONFIG-${cross_prefix}pkg-config}"
 fi
 
 # ar and ranlib doesn't load the LTO plugin by default, prefer the g++-prefixed wrappers which does.
-if [ -v AR]; then
+if [ -n "$AR" ]; then
   AR="${AR}"
 elif ${cross_prefix}g++-ar --version >/dev/null 2>&1; then
     AR="${AR-${cross_prefix}g++-ar}"
@@ -563,9 +563,9 @@ else
     AR="${AR-${cross_prefix}ar}"
 fi
 
-if [ -v RANLIB]; then
+if [ -n "$RANLIB" ]; then
   RANLIB="${RANLIB}"
-if ${cross_prefix}g++-ranlib --version >/dev/null 2>&1; then
+elif ${cross_prefix}g++-ranlib --version >/dev/null 2>&1; then
     RANLIB="${RANLIB-${cross_prefix}g++-ranlib}"
 else
     RANLIB="${RANLIB-${cross_prefix}ranlib}"
@@ -624,7 +624,7 @@ else
 fi
 
 # check if the word clang is anywhere in the file name of the c compiler
-if [[ "$cc_base" = clang* -o "$cc_base" = *clang -0 "$cc_base" = *clang* ]]; then
+if [[ "$cc_base" = clang* || "$cc_base" = *clang || "$cc_base" = *clang* ]]; then
     if cc_check '' -Werror=unknown-warning-option ; then
         CHECK_CFLAGS="$CHECK_CFLAGS -Werror=unknown-warning-option"
     fi
@@ -1399,8 +1399,7 @@ cat conftest.log >> config.log
 cat conftest.log
 
 # [ "$SRCPATH" != "." ] && ln -sf ${SRCPATH}/Makefile ./Makefile
-mkdir -p common/{aarch64,arm,ppc,x86,vec} test
+mkdir -p $BUILDPATH/common/{aarch64,arm,ppc,x86,vec} test
 
 echo
 echo "You can run 'make' or 'make fprofiled' now."
-
