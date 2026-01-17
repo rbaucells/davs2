@@ -535,46 +535,21 @@ done
 # if not building a program or lib, stop
 [ "$cli" = "no" -a "$shared" = "no" -a "$static" = "no" ] && die "Nothing to build. Enable cli, shared or static."
 
-# if CC is alr defined, use it, else, use default
-if [ -n "$CC" ]; then
-  CC="${CC}"
-else
-  CC="${CC-${cross_prefix}g++}"
-fi
+CC="${CC-${cross_prefix}g++}"
 
-# if STRIP is alr defined, use it, else, use default
-if [ -n "$STRIP" ]; then
-  STRIP="${STRIP}"
-else
-  STRIP="${STRIP-${cross_prefix}strip}"
-fi
+STRIP="${STRIP-${cross_prefix}strip}"
+INSTALL="${INSTALL-install}"
 
-# if INSTALL is alr defined, use it, else, use default
-if [ -n "$INSTALL" ]; then
-  INSTALL="${INSTALL}"
-else
-  INSTALL="${INSTALL-install}"
-fi
-
-# if PKGCONFIG is alr defined, use it, else, use default
-if [ -n "$PKGCONFIG" ]; then
-  PKGCONFIG="${PKGCONFIG}"
-else
-  PKGCONFIG="${PKGCONFIG-${cross_prefix}pkg-config}"
-fi
+PKGCONFIG="${PKGCONFIG-${cross_prefix}pkg-config}"
 
 # ar and ranlib doesn't load the LTO plugin by default, prefer the g++-prefixed wrappers which does.
-if [ -n "$AR" ]; then
-  AR="${AR}"
-elif ${cross_prefix}g++-ar --version >/dev/null 2>&1; then
+if ${cross_prefix}g++-ar --version >/dev/null 2>&1; then
     AR="${AR-${cross_prefix}g++-ar}"
 else
     AR="${AR-${cross_prefix}ar}"
 fi
 
-if [ -n "$RANLIB" ]; then
-  RANLIB="${RANLIB}"
-elif ${cross_prefix}g++-ranlib --version >/dev/null 2>&1; then
+if ${cross_prefix}g++-ranlib --version >/dev/null 2>&1; then
     RANLIB="${RANLIB-${cross_prefix}g++-ranlib}"
 else
     RANLIB="${RANLIB-${cross_prefix}ranlib}"
