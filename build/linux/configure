@@ -326,12 +326,8 @@ relative_path() {
 }
 
 # check if TOP_SRCPATH is already set, if so, use it, else use default
-if [ -n "$TOP_SRCPATH" ]; then
-  TOP_SRCPATH="${TOP_SRCPATH}"
-else
-  # default is 2 levels above pwd then into source
-  TOP_SRCPATH="$(cd ../../ ; pwd)"
-fi
+# default is 2 levels above pwd then into source
+TOP_SRCPATH="${TOP_SRCPATH:-$(cd ../../ && pwd)}"
 
 # if the TOP_SRCPATH is pwd, simplify it to .
 [ "TOP_SRCPATH" = "$(pwd)" ] && SRCPATH=.
@@ -352,12 +348,8 @@ SRCPATH="$(cd "${TOP_SRCPATH}/source" ; pwd)"
 [ -n "$(echo $SRCPATH | grep ' ')" ] && die "Out of tree builds are impossible with whitespace in source path."
 
 # check if BUILDPATH is already set, if so, use it, else use default
-if [ -n "$BUILDPATH" ]; then
-  BUILDPATH="${BUILDPATH}"
-else
-  # default is pwd
-  BUILDPATH="$(cd . ; pwd)"
-fi
+# default is pwd
+BUILDPATH="${BUILDPATH:-$(cd . ; pwd)}"
 
 # cant allow whitespace characters in BUILDPATH
 [ -n "$(echo $BUILDPATH | grep ' ')" ] && die "Out of tree builds are impossible with whitespace in build path."
